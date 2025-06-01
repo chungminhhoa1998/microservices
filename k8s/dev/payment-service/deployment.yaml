@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  labels:
+    app: hoa-dev
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hoa-dev
+      module: payment-service
+  template:
+    metadata:
+      labels:
+        app: hoa-dev
+        module: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: your.registry.com/payment-service:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DATA_SOURCE
+              valueFrom:
+                configMapKeyRef:
+                    name: payment-service-env-configmap
+                    key: DATA_SOURCE
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: payment-service-env-configmap
+                  key: DB_USERNAME
+            - name: DB_PASS
+              valueFrom:
+                configMapKeyRef:
+                  name: payment-service-env-configmap
+                  key: DB_PASS
+          ports:
+            - containerPort: 9001
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 9346
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 9346
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            periodSeconds: 30
+      restartPolicy: Always
